@@ -14,20 +14,17 @@ class GameScene: SKScene {
     var selectedNode = SKSpriteNode()
     var nodeNameArray = [""]
     let monster = SKSpriteNode(imageNamed: "closeMonster")
-    let when = DispatchTime.now() + 5
-    
     
     override func didMove(to view: SKView) {
         
         self.backgroundColor = SKColor.white
-        
         monster.size = CGSize(width: monster.size.width/2, height: monster.size.height/2)
         monster.position = CGPoint(x: self.frame.width/2, y: self.frame.height/2)
         monster.zPosition = -1
+        monster.name = "monster"
         self.addChild(monster)
         addFruit()
         addCarrot()
-        
     }
     
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -54,34 +51,36 @@ class GameScene: SKScene {
         if !selectedNode.isEqual(touchedNode) {
             selectedNode.removeAllActions()
             selectedNode.run(SKAction.rotate(toAngle: 0.0, duration: 0.1))
-            
             selectedNode = touchedNode
-            
-            if nodeNameArray.contains(touchedNode.name!) {
-                let sequence = SKAction.sequence([SKAction.rotate(byAngle: degToRad(degree: -4.0), duration: 0.1), SKAction.rotate(byAngle: 0.0, duration: 0.1), SKAction.rotate(byAngle: degToRad(degree: 4.0), duration: 0.1)])
-                selectedNode.run(SKAction.repeatForever(sequence))
+            if let name = touchedNode.name {
+                if nodeNameArray.contains(name) {
+                    let sequence = SKAction.sequence([SKAction.rotate(byAngle: degToRad(degree: -6.0), duration: 0.1), SKAction.rotate(byAngle: 0.0, duration: 0.1), SKAction.rotate(byAngle: degToRad(degree: 6.0), duration: 0.1)])
+                    selectedNode.run(SKAction.repeatForever(sequence))
+                }
             }
+            
         }
     }
     
     func panForTranslation(translation: CGPoint) {
         let position = selectedNode.position
-        if nodeNameArray.contains(selectedNode.name!){
-            selectedNode.position = CGPoint(x: position.x + translation.x, y: position.y + translation.y)
+        if let name = selectedNode.name {
+            if nodeNameArray.contains(name){
+                selectedNode.position = CGPoint(x: position.x + translation.x, y: position.y + translation.y)
+            }
         }
+        
     }
     
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+        
         guard let touch = touches.first else {
             return
         }
-        
         let touchLocation = touch.location(in: self)
         let previousPosition = touch.previousLocation(in: self)
         let translation = CGPoint(x: touchLocation.x - previousPosition.x, y: touchLocation.y - previousPosition.y)
-        
         panForTranslation(translation: translation)
-        
         let isPointInFrame = monster.frame.contains(touchLocation)
         
         if isPointInFrame == true {
@@ -92,24 +91,27 @@ class GameScene: SKScene {
     }
     
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        
         guard let touch = touches.first else {
             return
         }
-        
         let touchLocation = touch.location(in: self)
         let isPointInFrame = monster.frame.contains(touchLocation)
 
         if isPointInFrame == true {
             if selectedNode.name == "banana" {
-                DispatchQueue.main.asyncAfter(deadline: when) {
+                selectedNode.removeFromParent()
+                delay(time: 2, closure: {
                     self.addFruit()
-                }
-            } else {
-                DispatchQueue.main.asyncAfter(deadline: when) {
-                    self.addCarrot()
-                }
+                })
             }
-            selectedNode.removeFromParent()
+            if selectedNode.name == "carrot" {
+                selectedNode.removeFromParent()
+                delay(time: 2, closure: {
+                    self.addCarrot()
+                })
+            }
+            
             monster.texture = SKTexture(imageNamed: "closeMonster")
         }
     }
@@ -136,6 +138,10 @@ class GameScene: SKScene {
         self.addChild(banana)
     }
     
+    func delay(time: Double, closure:@escaping ()->()) {
         
-
+        DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + time) {
+            closure()
+        }
+    }
 }
